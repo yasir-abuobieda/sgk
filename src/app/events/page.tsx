@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { JoinUsButton } from '@/components/registration-modal';
-import { mockEvents } from '@/data/events';
+import { supabase } from '@/lib/supabase';
 
 export default function EventsPage() {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredEvents = mockEvents.filter(event => 
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from('events').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        setEvents(data);
+      }
+      setIsLoading(false);
+    };
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = events.filter(event => 
     filter === 'all' ? true : event.status === filter
   );
 

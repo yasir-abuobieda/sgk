@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { mockEvents } from '@/data/events';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminEvents() {
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +24,22 @@ export default function AdminEvents() {
 
   const [filter, setFilter] = useState('all');
 
+    const [isUploading, setIsUploading] = useState(false);
+
+  // Fetch from Supabase
+  const fetchEvents = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase.from('events').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setEvents(data);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
   const filteredEvents = events.filter(ev => filter === 'all' ? true : ev.status === filter);
 
   // Handle open Add/Edit modal
@@ -37,16 +54,39 @@ export default function AdminEvents() {
     setIsModalOpen(true);
   };
 
+  // Handle image upload to Supabase
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `events/${fileName}`;
+
+    setIsUploading(true);
+    const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+    
+    if (uploadError) {
+      alert('خطأ في رفع الصورة: ' + uploadError.message);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+    setFormData({ ...formData, image: data.publicUrl });
+    setIsUploading(false);
+  };
+
   // Handle save (Add/Edit)
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentEvent) {
-      // Edit
-      setEvents(events.map(ev => ev.id === currentEvent.id ? { ...formData, id: currentEvent.id } : ev));
+      // Edit in Supabase
+      const { error } = await supabase.from('events').update(formData).eq('id', currentEvent.id);
+      if (!error) fetchEvents();
     } else {
-      // Add
-      const newEvent = { ...formData, id: Date.now() };
-      setEvents([newEvent, ...events]);
+      // Add to Supabase
+      const { error } = await supabase.from('events').insert([formData]);
+      if (!error) fetchEvents();
     }
     setIsModalOpen(false);
   };
@@ -57,8 +97,11 @@ export default function AdminEvents() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDelete = () => {
-    setEvents(events.filter(ev => ev.id !== currentEvent.id));
+  const handleDelete = async () => {
+    if (currentEvent) {
+      await supabase.from('events').delete().eq('id', currentEvent.id);
+      fetchEvents();
+    }
     setIsDeleteModalOpen(false);
   };
 
@@ -168,7 +211,7 @@ export default function AdminEvents() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">التاريخ</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                  <input required type="date" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -183,14 +226,9 @@ export default function AdminEvents() {
                   <label className="block text-sm font-bold text-slate-700 mb-1">صورة الفعالية</label>
                   <div className="flex gap-2">
                     <input type="url" dir="ltr" placeholder="رابط URL" className="flex-1 px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none text-right" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
-                    <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border border-slate-200">
-                      رفع محلي
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                           const fileUrl = URL.createObjectURL(e.target.files[0]);
-                           setFormData({...formData, image: fileUrl});
-                        }
-                      }} />
+                    <label className={`px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border ${isUploading ? 'bg-slate-200 text-slate-400 border-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'}`}>
+                      {isUploading ? 'جاري الرفع...' : 'رفع محلي'}
+                      <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={handleImageUpload} />
                     </label>
                   </div>
                 </div>

@@ -1,16 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { mockNews } from '@/data/news';
+import { supabase } from '@/lib/supabase';
 
 const categories = ['الكل', 'فعاليات', 'شراكات', 'مبادرات', 'أخبار المجلس'];
 
 export default function NewsPage() {
   const [activeCategory, setActiveCategory] = useState('الكل');
+  const [news, setNews] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredNews = mockNews.filter(news => 
-    activeCategory === 'الكل' ? true : news.category === activeCategory
+  useEffect(() => {
+    const fetchNews = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        setNews(data);
+      }
+      setIsLoading(false);
+    };
+    fetchNews();
+  }, []);
+
+  const filteredNews = news.filter(n => 
+    activeCategory === 'الكل' ? true : n.category === activeCategory
   );
 
   return (

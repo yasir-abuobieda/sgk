@@ -1,24 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 const galleryCategories = ['الكل', 'مؤتمرات', 'فعاليات رياضية', 'ورش عمل'];
-
-const galleryImages = [
-  { id: 1, src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=800&auto=format&fit=crop', category: 'مؤتمرات', title: 'المؤتمر السنوي الأول' },
-  { id: 2, src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=800&auto=format&fit=crop', category: 'ورش عمل', title: 'لقاء تعارفي' },
-  { id: 3, src: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800&auto=format&fit=crop', category: 'فعاليات رياضية', title: 'بطولة كرة القدم' },
-  { id: 4, src: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop', category: 'مؤتمرات', title: 'اجتماع المكتب التنفيذي' },
-  { id: 5, src: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=800&auto=format&fit=crop', category: 'ورش عمل', title: 'ورشة التوجيه المهني' },
-  { id: 6, src: 'https://images.unsplash.com/photo-1523580494112-071dcb92a11d?q=80&w=800&auto=format&fit=crop', category: 'فعاليات رياضية', title: 'المارثون الشبابي' },
-  { id: 7, src: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?q=80&w=800&auto=format&fit=crop', category: 'مؤتمرات', title: 'مؤتمر ريادة الأعمال' },
-  { id: 8, src: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=800&auto=format&fit=crop', category: 'ورش عمل', title: 'جلسة العصف الذهني' },
-  { id: 9, src: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=800&auto=format&fit=crop', category: 'فعاليات رياضية', title: 'اليوم الرياضي المفتوح' },
-];
 
 export default function GalleryPage() {
   const [filter, setFilter] = useState('الكل');
   const [selectedImage, setSelectedImage] = useState<{src: string, title: string} | null>(null);
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGallery = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        setGalleryImages(data);
+      }
+      setIsLoading(false);
+    };
+    fetchGallery();
+  }, []);
 
   const filteredImages = filter === 'الكل' 
     ? galleryImages 

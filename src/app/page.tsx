@@ -1,12 +1,18 @@
 import Link from 'next/link';
-import { mockNews } from '@/data/news';
-import { mockEvents } from '@/data/events';
+import { supabase } from '@/lib/supabase';
 import { JoinUsButton } from '@/components/registration-modal';
 
-export default function Home() {
-  const latestNews = mockNews.slice(0, 3);
-  const upcomingEvents = mockEvents.filter(e => e.status === 'upcoming').slice(0, 3);
+// Revalidate this page instantly to always show fresh data
+export const revalidate = 0;
 
+export default async function Home() {
+  // Fetch latest 3 news
+  const { data: newsData } = await supabase.from('news').select('*').order('created_at', { ascending: false }).limit(3);
+  const latestNews = newsData || [];
+
+  // Fetch upcoming 3 events
+  const { data: eventsData } = await supabase.from('events').select('*').eq('status', 'upcoming').order('created_at', { ascending: false }).limit(3);
+  const upcomingEvents = eventsData || [];
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}

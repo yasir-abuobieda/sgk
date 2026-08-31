@@ -61,7 +61,7 @@ export function Footer() {
         {/* Copyrights */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-medium text-white/60">
           <p>جميع الحقوق محفوظة &copy; {new Date().getFullYear()} لمجلس الشباب السوداني.</p>
-          <p>تم التطوير بواسطة <a href="https://www.linkedin.com/in/yasir-abuobieda-mohammed-fadlalla-4844a9418/" target="_blank" rel="noreferrer" className="text-brand-gold font-bold hover:text-white transition-colors">ياسر أبو عبيدة</a></p>
+          <p>تم التطوير بواسطة <a href="https://www.linkedin.com/in/yasir-abuobieda-mohammed-fadlalla-4844a9418/" target="_blank" rel="noreferrer" className="text-brand-gold font-bold hover:text-white transition-colors">YASIR ABUOBIEDA</a></p>
         </div>
       </div>
     </footer>

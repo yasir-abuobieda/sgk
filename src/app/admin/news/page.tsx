@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { mockNews } from '@/data/news';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminNews() {
-  const [news, setNews] = useState(mockNews);
+  const [news, setNews] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +23,22 @@ export default function AdminNews() {
   });
 
   const [filter, setFilter] = useState('الكل');
+
+    const [isUploading, setIsUploading] = useState(false);
+
+  // Fetch news from Supabase
+  const fetchNews = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setNews(data);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
 
   const filteredNews = news.filter(n => filter === 'الكل' ? true : n.category === filter);
 
@@ -44,20 +61,42 @@ export default function AdminNews() {
     setIsModalOpen(true);
   };
 
-  // Handle save (Add/Edit)
-  const handleSave = (e: React.FormEvent) => {
+  // Handle image upload to Supabase
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `news/${fileName}`;
+
+    setIsUploading(true);
+    const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+    
+    if (uploadError) {
+      alert('خطأ في رفع الصورة: ' + uploadError.message);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+    setFormData({ ...formData, image: data.publicUrl });
+    setIsUploading(false);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const slug = formData.title.trim().replace(/\s+/g, '-').toLowerCase();
+
     if (currentItem) {
-      // Edit
-      setNews(news.map(n => n.id === currentItem.id ? { ...formData, id: currentItem.id, slug: currentItem.slug } : n));
+      // Edit in Supabase
+      const { error } = await supabase.from('news').update({ ...formData, slug }).eq('id', currentItem.id);
+      if (error) alert('خطأ في التعديل: ' + error.message);
+      else fetchNews();
     } else {
-      // Add
-      const newItem = { 
-        ...formData, 
-        id: Date.now().toString(),
-        slug: formData.title.replace(/\s+/g, '-').toLowerCase()
-      };
-      setNews([newItem, ...news]);
+      // Add to Supabase
+      const { error } = await supabase.from('news').insert([{ ...formData, slug }]);
+      if (error) alert('خطأ في الإضافة: ' + error.message);
+      else fetchNews();
     }
     setIsModalOpen(false);
   };
@@ -68,8 +107,11 @@ export default function AdminNews() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDelete = () => {
-    setNews(news.filter(n => n.id !== currentItem.id));
+  const handleDelete = async () => {
+    if (currentItem) {
+      await supabase.from('news').delete().eq('id', currentItem.id);
+      fetchNews();
+    }
     setIsDeleteModalOpen(false);
   };
 
@@ -176,21 +218,22 @@ export default function AdminNews() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">التاريخ</label>
-                  <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+                  <input 
+                    type="date" 
+                    required
+                    value={formData.date}
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-maroon/20 focus:border-brand-maroon text-right"
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">صورة الخبر</label>
                 <div className="flex gap-2">
                   <input type="url" dir="ltr" placeholder="رابط URL" className="flex-1 px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none text-right" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
-                  <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border border-slate-200">
-                    رفع محلي
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                         const fileUrl = URL.createObjectURL(e.target.files[0]);
-                         setFormData({...formData, image: fileUrl});
-                      }
-                    }} />
+                  <label className={`px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border ${isUploading ? 'bg-slate-200 text-slate-400 border-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'}`}>
+                    {isUploading ? 'جاري الرفع...' : 'رفع محلي'}
+                    <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={handleImageUpload} />
                   </label>
                 </div>
               </div>

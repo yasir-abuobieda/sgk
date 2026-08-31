@@ -1,15 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-
-const initialGallery = [
-  { id: 1, src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=800&auto=format&fit=crop', category: 'مؤتمرات', title: 'المؤتمر السنوي الأول' },
-  { id: 2, src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=800&auto=format&fit=crop', category: 'ورش عمل', title: 'لقاء تعارفي' },
-  { id: 3, src: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=800&auto=format&fit=crop', category: 'فعاليات رياضية', title: 'بطولة كرة القدم' },
-];
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminGallery() {
-  const [images, setImages] = useState(initialGallery);
+  const [images, setImages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +20,21 @@ export default function AdminGallery() {
   });
 
   const [filter, setFilter] = useState('الكل');
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Fetch from Supabase
+  const fetchGallery = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+    if (!error && data) {
+      setImages(data);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchGallery();
+  }, []);
 
   const filteredImages = images.filter(img => filter === 'الكل' ? true : img.category === filter);
 
@@ -39,16 +50,39 @@ export default function AdminGallery() {
     setIsModalOpen(true);
   };
 
+  // Handle image upload to Supabase
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `gallery/${fileName}`;
+
+    setIsUploading(true);
+    const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+    
+    if (uploadError) {
+      alert('خطأ في رفع الصورة: ' + uploadError.message);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+    setFormData({ ...formData, src: data.publicUrl });
+    setIsUploading(false);
+  };
+
   // Handle save (Add/Edit)
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentItem) {
-      // Edit
-      setImages(images.map(img => img.id === currentItem.id ? { ...formData, id: currentItem.id } : img));
+      // Edit in Supabase
+      const { error } = await supabase.from('gallery').update(formData).eq('id', currentItem.id);
+      if (!error) fetchGallery();
     } else {
-      // Add
-      const newItem = { ...formData, id: Date.now() };
-      setImages([newItem, ...images]);
+      // Add to Supabase
+      const { error } = await supabase.from('gallery').insert([formData]);
+      if (!error) fetchGallery();
     }
     setIsModalOpen(false);
   };
@@ -59,8 +93,11 @@ export default function AdminGallery() {
     setIsDeleteModalOpen(true);
   };
 
-  const handleDelete = () => {
-    setImages(images.filter(img => img.id !== currentItem.id));
+  const handleDelete = async () => {
+    if (currentItem) {
+      await supabase.from('gallery').delete().eq('id', currentItem.id);
+      fetchGallery();
+    }
     setIsDeleteModalOpen(false);
   };
 
@@ -145,16 +182,12 @@ export default function AdminGallery() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">صورة الفعالية</label>
                 <div className="flex gap-2">
                   <input type="url" dir="ltr" placeholder="رابط URL" className="flex-1 px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-brand-maroon focus:outline-none text-right" value={formData.src} onChange={e => setFormData({...formData, src: e.target.value})} />
-                  <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border border-slate-200">
-                    رفع محلي
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                         const fileUrl = URL.createObjectURL(e.target.files[0]);
-                         setFormData({...formData, src: fileUrl});
-                      }
-                    }} />
+                  <label className={`px-4 py-2 rounded-lg font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center border ${isUploading ? 'bg-slate-200 text-slate-400 border-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'}`}>
+                    {isUploading ? 'جاري الرفع...' : 'رفع محلي'}
+                    <input type="file" accept="image/*" className="hidden" disabled={isUploading} onChange={handleImageUpload} />
                   </label>
                 </div>
+
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">إلغاء</button>

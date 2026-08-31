@@ -1,4 +1,26 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+
 export default function AdminDashboard() {
+  const [stats, setStats] = useState({ news: 0, events: 0, gallery: 0 });
+
+  useEffect(() => {
+    async function fetchStats() {
+      const { count: newsCount } = await supabase.from('news').select('*', { count: 'exact', head: true });
+      const { count: eventsCount } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('status', 'upcoming');
+      const { count: galleryCount } = await supabase.from('gallery').select('*', { count: 'exact', head: true });
+
+      setStats({
+        news: newsCount || 0,
+        events: eventsCount || 0,
+        gallery: galleryCount || 0
+      });
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -7,7 +29,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500 mb-1">إجمالي الأخبار</p>
-            <h3 className="text-3xl font-extrabold text-slate-800">12</h3>
+            <h3 className="text-3xl font-extrabold text-slate-800">{stats.news}</h3>
           </div>
           <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -20,7 +42,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500 mb-1">الفعاليات القادمة</p>
-            <h3 className="text-3xl font-extrabold text-brand-maroon">3</h3>
+            <h3 className="text-3xl font-extrabold text-brand-maroon">{stats.events}</h3>
           </div>
           <div className="w-12 h-12 rounded-full bg-red-50 text-brand-maroon flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -33,7 +55,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500 mb-1">صور المعرض</p>
-            <h3 className="text-3xl font-extrabold text-brand-gold">45</h3>
+            <h3 className="text-3xl font-extrabold text-brand-gold">{stats.gallery}</h3>
           </div>
           <div className="w-12 h-12 rounded-full bg-yellow-50 text-brand-gold flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -49,8 +71,8 @@ export default function AdminDashboard() {
           من هنا يمكنك إدارة محتوى موقع مجلس الشباب السوداني بالكامل. 
           استخدم القائمة الجانبية للتنقل بين الأقسام لإضافة أو تعديل أو حذف (الأخبار، الفعاليات، والصور).
         </p>
-        <div className="mt-8 p-4 bg-blue-50 text-blue-800 rounded-lg max-w-2xl mx-auto text-sm">
-          <strong>ملاحظة:</strong> واجهة لوحة التحكم هذه جاهزة للعمل، وبمجرد شراء الاستضافة (Hostinger) سيتم ربطها برمجياً بقاعدة البيانات لتفعيل إمكانية الحفظ الحقيقي للبيانات.
+        <div className="mt-8 p-4 bg-green-50 text-green-800 rounded-lg max-w-2xl mx-auto text-sm font-medium border border-green-100">
+          تم ربط قاعدة البيانات بنجاح (Supabase). البيانات المحفوظة ستظهر في الموقع العام فوراً! 🚀
         </div>
       </div>
     </div>

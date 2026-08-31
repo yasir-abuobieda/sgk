@@ -18,14 +18,60 @@ export function Navbar() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
+    
+    // Check initial language from cookie
+    const match = document.cookie.match(new RegExp('(^| )googtrans=([^;]+)'));
+    if (match) {
+      const val = match[2];
+      if (val.includes('/en')) setCurrentLang('ENG');
+      else if (val.includes('/tr')) setCurrentLang('TR');
+      else setCurrentLang('AR');
+    }
+    
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const changeLanguage = (lang: string) => {
     setCurrentLang(lang);
     setIsLangOpen(false);
-    // Note: To make the translation actually work in the future, 
-    // we will connect this to next-intl or a context provider.
+    
+    let target = 'ar';
+    if (lang === 'ENG') target = 'en';
+    if (lang === 'TR') target = 'tr';
+
+    // Update cookie for future page reloads
+    if (target === 'ar') {
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=' + window.location.hostname + '; path=/;';
+    } else {
+      document.cookie = `googtrans=/ar/${target}; path=/;`;
+      document.cookie = `googtrans=/ar/${target}; domain=` + window.location.hostname + '; path=/;';
+    }
+
+    // Instantly translate using Google Translate widget in DOM
+    const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    if (select) {
+      // If returning to Arabic, Google sometimes removes 'ar' from options. 
+      // If setting value fails, fallback to reload.
+      select.value = target;
+      if (select.value === target) {
+        select.dispatchEvent(new Event('change'));
+      } else {
+        window.location.reload();
+        return;
+      }
+    } else {
+      window.location.reload();
+      return;
+    }
+
+    // Instantly switch HTML direction (Tailwind will react immediately)
+    const isLtr = target === 'en' || target === 'tr';
+    document.documentElement.dir = isLtr ? 'ltr' : 'rtl';
+    document.documentElement.lang = target;
+
+    // Remove any fade classes so it doesn't blink
+    document.body.classList.remove('animate-translation-fade');
   };
 
   return (
@@ -66,7 +112,7 @@ export function Navbar() {
           </a>
 
           {/* Language Switcher Dropdown */}
-          <div className="relative mr-2" ref={dropdownRef}>
+          <div className="relative mr-2 notranslate" ref={dropdownRef}>
             <button 
               onClick={() => setIsLangOpen(!isLangOpen)}
               className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm transition-all shadow-sm ${

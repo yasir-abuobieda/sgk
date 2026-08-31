@@ -1,9 +1,12 @@
-import { mockNews } from '@/data/news';
+import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-export default function NewsArticlePage({ params }: { params: { slug: string } }) {
-  const article = mockNews.find(n => n.slug === params.slug);
+export const revalidate = 0;
+
+export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
+  const decodedSlug = decodeURIComponent(params.slug);
+  const { data: article } = await supabase.from('news').select('*').eq('slug', decodedSlug).single();
   
   if (!article) {
     notFound();
