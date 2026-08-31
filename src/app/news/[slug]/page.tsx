@@ -5,7 +5,8 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
-  const decodedSlug = decodeURIComponent(params.slug);
+  const slug = params?.slug || '';
+  const decodedSlug = decodeURIComponent(slug);
   const { data: article } = await supabase.from('news').select('*').eq('slug', decodedSlug).single();
   
   if (!article) {
