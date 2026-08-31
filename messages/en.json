@@ -1,0 +1,27 @@
+{
+  "Navigation": {
+    "home": "Home",
+    "events": "Events",
+    "news": "News",
+    "about": "About Us",
+    "contact": "Contact",
+    "gallery": "Gallery",
+    "joinUs": "Join Us"
+  },
+  "HomePage": {
+    "heroTitle": "Sudanese Youth Council in Turkey",
+    "heroSubtitle": "Gathering energies and building the future. Your platform for participation, development, and innovation in a leading youth community.",
+    "heroCta": "Join our Events",
+    "stats": {
+      "youth": "Youth",
+      "events": "Completed Events",
+      "cities": "Cities in Turkey"
+    },
+    "featuredEvents": "Featured Events",
+    "recentNews": "Recent News"
+  },
+  "Footer": {
+    "description": "A platform to support and guide Sudanese youth in Turkey.",
+    "rights": "All rights reserved © 2024 Sudanese Youth Council in Turkey."
+  }
+}

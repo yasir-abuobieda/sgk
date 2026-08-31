@@ -1,0 +1,27 @@
+{
+  "Navigation": {
+    "home": "Ana Sayfa",
+    "events": "Etkinlikler",
+    "news": "Haberler",
+    "about": "Hakkımızda",
+    "contact": "İletişim",
+    "gallery": "Galeri",
+    "joinUs": "Bize Katılın"
+  },
+  "HomePage": {
+    "heroTitle": "Türkiye'deki Sudanlı Gençlik Konseyi",
+    "heroSubtitle": "Enerjileri bir araya getiriyor, geleceği inşa ediyoruz. Lider bir gençlik toplumunda katılım, gelişim ve yenilik için platformunuz.",
+    "heroCta": "Etkinliklerimize Katılın",
+    "stats": {
+      "youth": "Genç",
+      "events": "Tamamlanan Etkinlik",
+      "cities": "Şehir"
+    },
+    "featuredEvents": "Öne Çıkan Etkinlikler",
+    "recentNews": "Son Haberler"
+  },
+  "Footer": {
+    "description": "Türkiye'deki Sudanlı gençleri destekleme ve yönlendirme platformu.",
+    "rights": "Tüm hakları saklıdır © 2024 Türkiye'deki Sudanlı Gençlik Konseyi."
+  }
+}
