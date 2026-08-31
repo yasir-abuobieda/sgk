@@ -1,16 +1,23 @@
-import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-// Force dynamic rendering - never prerender at build time
+// Tell Next.js: this is a fully dynamic route, never prerender
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const dynamicParams = true;
+
+// Return empty array = no static pages to generate at build time
+export async function generateStaticParams() {
+  return [];
+}
 
 export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
   const slug = params?.slug;
   if (!slug) return notFound();
 
   const decodedSlug = decodeURIComponent(slug);
+
+  // Import supabase only at runtime (not during build)
+  const { supabase } = await import('@/lib/supabase');
   const { data: article } = await supabase.from('news').select('*').eq('slug', decodedSlug).single();
 
   if (!article) {
