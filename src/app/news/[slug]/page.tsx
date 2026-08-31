@@ -5,7 +5,11 @@ import Link from 'next/link';
 export const revalidate = 0;
 
 export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
-  const slug = params?.slug || '';
+  const slug = params?.slug;
+  
+  // Vercel build trace bypass: if Next.js executes this with no params during build, return early
+  if (!slug) return null;
+  
   const decodedSlug = decodeURIComponent(slug);
   const { data: article } = await supabase.from('news').select('*').eq('slug', decodedSlug).single();
   
