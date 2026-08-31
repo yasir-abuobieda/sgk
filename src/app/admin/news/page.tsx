@@ -54,7 +54,7 @@ export default function AdminNews() {
       // Add
       const newItem = { 
         ...formData, 
-        id: Date.now(),
+        id: Date.now().toString(),
         slug: formData.title.replace(/\s+/g, '-').toLowerCase()
       };
       setNews([newItem, ...news]);

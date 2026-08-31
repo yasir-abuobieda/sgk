@@ -1,0 +1,9 @@
+@echo off
+echo Adding changes to git...
+git add .
+echo Committing changes...
+git commit -m "fix: resolve TypeScript type mismatch for id in admin news page"
+echo Pushing to remote...
+git push
+echo Done!
+pause
