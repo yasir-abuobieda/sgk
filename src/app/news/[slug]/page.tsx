@@ -2,17 +2,17 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
+// Force dynamic rendering - never prerender at build time
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
   const slug = params?.slug;
-  
-  // Vercel build trace bypass: if Next.js executes this with no params during build, return early
-  if (!slug) return null;
-  
+  if (!slug) return notFound();
+
   const decodedSlug = decodeURIComponent(slug);
   const { data: article } = await supabase.from('news').select('*').eq('slug', decodedSlug).single();
-  
+
   if (!article) {
     notFound();
   }
